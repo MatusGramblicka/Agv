@@ -31,8 +31,18 @@ var agvCount = inData.AgvCount;
 var taktTimes = inData.TaktTimes.OrderBy(t => t.Time).ToList();
 var distances = inData.Distances;
 
+var avgsMap = Generators.GenerateAvgsMap(agvCount);
+var avgLastTimeMap = Generators.GenerateAvgLastTimeMap(agvCount);
+
 var taktMapCalculator = new TaktMapCalculator();
-var transportOrders = taktMapCalculator.CalulateTaktMapCalculator(taktTimes, distances);
+var transportTimesMapCalculator = taktMapCalculator.TransportTimesMapCalculator(taktTimes, distances, true);
+
+var groupTaktTimes = taktTimes.GroupBy(t => t.Time, new DeltaTaktComparer(AgvConstants.TaktDelta));
+
+var avgDistributor = new AvgDistributor();
+var avgsDistribution = avgDistributor.FillAvgsMap(groupTaktTimes, avgsMap, transportTimesMapCalculator, avgLastTimeMap);
+
+var transportOrders = taktMapCalculator.CalulateTaktMapCalculator(taktTimes, distances, avgsDistribution);
 
 var usedAgvCount = transportOrders.Select(t => t.Agv).Distinct().Count();
 var totalTaktTime = taktTimes.Last().Time;
