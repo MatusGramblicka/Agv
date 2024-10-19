@@ -1,7 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Transactions;
-using ConsoleApp1;
-using ConsoleApp1.Contracts.Input;
+﻿using ConsoleApp1.Contracts.Input;
 using ConsoleApp1.Contracts.Output;
 using ConsoleApp1.Core;
 
@@ -37,37 +34,15 @@ var distances = inData.Distances;
 var avgsMap = Generators.GenerateAvgsMap(agvCount);
 var avgLastTimeMap = Generators.GenerateAvgLastTimeMap(agvCount);
 
-
 var taktMapCalculator = new TaktMapCalculator();
 var transportTimesMapCalculator = taktMapCalculator.TransportTimesMapCalculator(taktTimes, distances, true);
 
-int index = 1;
 var groupTaktTimes = taktTimes.GroupBy(t => t.Time, new DeltaTaktComparer(AgvConstants.TaktDelta));
-foreach (var groupTaktTime in groupTaktTimes)
-{
-    Console.WriteLine(groupTaktTime.Key);
 
-    int avgIndex = 1;
-    foreach (var taktTime in groupTaktTime)
-    {
-        avgsMap[index] = (avgIndex, transportTimesMapCalculator[index-1]);
-        if (avgLastTimeMap[avgIndex].HasValue)
-        {
-            while (avgsMap[index].transportTime < avgLastTimeMap[avgIndex].Value)
-            {
-                avgIndex++;
-            }
-            avgLastTimeMap[avgIndex] = avgsMap[index].transportTime;
-        }
+var avgDistributor = new AvgDistributor();
+var avgsDistribution = avgDistributor.FillAvgsMap(groupTaktTimes, avgsMap, transportTimesMapCalculator, avgLastTimeMap);
 
-        avgLastTimeMap[avgIndex] = avgsMap[index].transportTime;
-
-        avgIndex++;
-        index++;
-    }
-}
-
-var transportOrders = taktMapCalculator.CalulateTaktMapCalculator(taktTimes, distances, avgsMap);
+var transportOrders = taktMapCalculator.CalulateTaktMapCalculator(taktTimes, distances, avgsDistribution);
 
 var usedAgvCount = transportOrders.Select(t => t.Agv).Distinct().Count();
 var totalTaktTime = taktTimes.Last().Time;

@@ -1,4 +1,4 @@
-﻿namespace ConsoleApp1;
+﻿namespace ConsoleApp1.Core;
 
 public class DeltaTaktComparer : IEqualityComparer<double>
 {

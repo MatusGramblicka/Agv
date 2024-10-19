@@ -6,7 +6,7 @@ namespace ConsoleApp1.Core.Interfaces;
 public interface ITaktMapCalculator
 {
     List<TransportOrderMidProduct> CalulateTaktMapCalculator(List<TaktTime> taktTimes, List<Distance> distances,
-        Dictionary<int, (int? avg, long? transportTime)> avgsMap);
+        Dictionary<int, int?> avgsMap);
 
     List<long> TransportTimesMapCalculator(List<TaktTime> taktTimes, List<Distance> distances,
         bool startBefore = false);
