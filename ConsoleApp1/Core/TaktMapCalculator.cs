@@ -1,11 +1,20 @@
 ﻿using ConsoleApp1.Contracts.Input;
 using ConsoleApp1.Contracts.Output;
+using ConsoleApp1.Core.Interfaces;
 
 namespace ConsoleApp1.Core;
 
-public class TaktMapCalculator
+public class TaktMapCalculator : ITaktMapCalculator
 {
-    public List<TransportOrderMidProduct> CalulateTaktMapCalculator(List<TaktTime> taktTimes, List<Distance> distances)
+    /// <summary>
+    /// Generate map of avgs' utilization with from to destinations
+    /// </summary>
+    /// <param name="taktTimes"></param>
+    /// <param name="distances"></param>
+    /// <param name="avgsMap"></param>
+    /// <returns></returns>
+    public List<TransportOrderMidProduct> CalulateTaktMapCalculator(List<TaktTime> taktTimes, List<Distance> distances,
+        Dictionary<int, int?> avgsMap)
     {
         var transportOrders = new List<TransportOrderMidProduct>();
 
@@ -25,7 +34,7 @@ public class TaktMapCalculator
                     Time = transportOrders.Last().Time + timeTransportFromPickupToDepo,
                     From = 0,
                     To = time.From,
-                    Agv = 1,
+                    Agv = avgsMap[i + 1] ?? 1,
                     Takt = i,
                 };
             }
@@ -36,7 +45,7 @@ public class TaktMapCalculator
                     Time = taktTimes.First().Time - timeFromDepoToLine,
                     From = 0,
                     To = time.From,
-                    Agv = 1,
+                    Agv = avgsMap[i + 1] ?? 1,
                     Takt = i
                 };
             }
@@ -49,7 +58,7 @@ public class TaktMapCalculator
                 Time = transportOrderDepoToLine.Time + timeFromDepoToLine,
                 From = time.From,
                 To = time.To,
-                Agv = 1,
+                Agv = avgsMap[i + 1] ?? 1,
                 Takt = i,
                 MidTime = transportOrderDepoToLine.Time + timeFromDepoToLine
             };
@@ -62,7 +71,7 @@ public class TaktMapCalculator
                 Time = transportOrderFromLineToPickup.Time + timeFromLineToPickup,
                 From = time.To,
                 To = 0,
-                Agv = 1,
+                Agv = avgsMap[i + 1] ?? 1,
                 Takt = i
             };
 
@@ -72,5 +81,46 @@ public class TaktMapCalculator
         }
 
         return transportOrders;
+    }
+
+    /// <summary>
+    /// Generate times for every line transport
+    /// </summary>
+    /// <param name="taktTimes"></param>
+    /// <param name="distances"></param>
+    /// <param name="startBefore"></param>
+    /// <returns></returns>
+    public List<long> TransportTimesMapCalculator(List<TaktTime> taktTimes, List<Distance> distances,
+        bool startBefore = false)
+    {
+        var lastTimesOfTransport = new List<long>();
+
+        long timeTransportFromPickupToDepo;
+
+        foreach (var time in taktTimes)
+        {
+            var distFromDepoToLine = distances.GetDistance(0, time.From);
+            var timeFromDepoToLine = distFromDepoToLine.GetTransportTime();
+
+            if (!startBefore)
+            {
+                // todo do not subtract
+            }
+            else
+            {
+                timeFromDepoToLine = time.Time - timeFromDepoToLine;
+            }
+
+            var distFromLineToPickup = distances.GetDistance(time.From, time.To);
+            var timeFromLineToPickup = distFromLineToPickup.GetTransportTime();
+
+            var distFromPickupToDepo = distances.GetDistance(time.To, 0);
+            timeTransportFromPickupToDepo = distFromPickupToDepo.GetTransportTime();
+
+            lastTimesOfTransport.Add(timeFromDepoToLine + timeFromLineToPickup +
+                                     timeTransportFromPickupToDepo);
+        }
+
+        return lastTimesOfTransport;
     }
 }
